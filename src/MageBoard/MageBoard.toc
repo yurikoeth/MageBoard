@@ -1,0 +1,15 @@
+## Interface: 16001, 120105
+## Title: MageBoard
+## Notes: Mage services marketplace. Mages list portals, food, water and buffs with their own rates; players browse who's online and request with one click.
+## Author: yurikoeth
+## Version: 1.0.0
+## SavedVariables: MageBoardDB
+## SavedVariablesPerCharacter: MageBoardCharDB
+## IconTexture: Interface\Icons\Spell_Arcane_PortalStormWind
+## AddonCompartmentFunc: MageBoard_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: MageBoard_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: MageBoard_OnCompartmentLeave
+## Category: Professions
+
+Core.lua
+UI.lua
