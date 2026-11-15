@@ -1,0 +1,6 @@
+package-as: MageBoard
+
+ignore:
+  - README.md
+  - logo.png
+  - .pkgmeta
