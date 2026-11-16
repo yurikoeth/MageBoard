@@ -17,7 +17,7 @@ A request arriving in chat:
 <img src="screenshots/request-alert.png" width="420" alt="Chat alert: a player wants Portal: Stormwind">
 
 ## Install
-1. Download `MageDash-1.1.0.zip` from the [Releases page](https://github.com/yurikoeth/MageBoard/releases).
+1. Download `MageDash-1.1.0.zip` from the [Releases page](https://github.com/yurikoeth/MageDash/releases).
 2. Unzip it into `World of Warcraft\_forever_\Interface\AddOns\` so the folder sits at `AddOns\MageDash`.
 3. Restart the game or `/reload`.
 
@@ -59,7 +59,7 @@ A request arriving in chat:
 - Listings show who's online right now. A mage drops off the board a few minutes after they close, log off or stop sending updates.
 - **No gold changes hands through the addon.** Payment happens through the normal trade window.
 - Built for WoW: Forever (interface 16001). Also loads on Retail.
-- **Status:** new. Tested in-game between two players on WoW: Forever. Bug reports welcome in [Issues](https://github.com/yurikoeth/MageBoard/issues).
+- **Status:** new. Tested in-game between two players on WoW: Forever. Bug reports welcome in [Issues](https://github.com/yurikoeth/MageDash/issues).
 
 ## Feedback
 Found a bug? Open an issue with the Lua error text (BugSack makes this easy) and what you were doing at the time.
