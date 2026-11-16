@@ -1,0 +1,15 @@
+## Interface: 16001, 120105
+## Title: Mage Dash
+## Notes: Mage and warlock services marketplace. List portals, food, water, buffs and summons with your own rates; players browse who's online and request with one click.
+## Author: yurikoeth
+## Version: 1.1.0
+## SavedVariables: MageDashDB
+## SavedVariablesPerCharacter: MageDashCharDB
+## IconTexture: Interface\Icons\Spell_Arcane_PortalStormWind
+## AddonCompartmentFunc: MageDash_OnCompartmentClick
+## AddonCompartmentFuncOnEnter: MageDash_OnCompartmentEnter
+## AddonCompartmentFuncOnLeave: MageDash_OnCompartmentLeave
+## Category: Professions
+
+Core.lua
+UI.lua

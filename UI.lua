@@ -1,10 +1,10 @@
--- MageBoard: UI (Find a Mage / My Services)
+-- Mage Dash: UI (Find a Mage / My Services)
 
 local ADDON, ns = ...
 local UI = {}
 ns.UI = UI
 
-local W, H     = 500, 600
+local W, H     = 500, 644
 local ROW_H    = 72
 local REQ_ROWS = 5
 
@@ -69,7 +69,7 @@ end
 function UI:Build()
     if self.frame then return end
 
-    local f = CreateFrame("Frame", "MageBoardFrame", UIParent, "BasicFrameTemplateWithInset")
+    local f = CreateFrame("Frame", "MageDashFrame", UIParent, "BasicFrameTemplateWithInset")
     f:SetSize(W, H)
     f:SetFrameStrata("HIGH")
     f:SetClampedToScreen(true)
@@ -89,28 +89,41 @@ function UI:Build()
         f:SetPoint("CENTER")
     end
     f:Hide()
-    tinsert(UISpecialFrames, "MageBoardFrame")
+    tinsert(UISpecialFrames, "MageDashFrame")
     f:SetScript("OnShow", function() UI:Refresh() end)
 
-    local title = Label(f, "GameFontHighlight", "MageBoard")
+    local title = Label(f, "GameFontHighlight", "Mage Dash")
     title:SetPoint("TOP", 0, -5)
 
     -- Tabs
-    local tabFind = Button(f, "Find a Mage", 140, 24)
+    local tabFind = Button(f, "Find Services", 140, 24)
     tabFind:SetPoint("TOPLEFT", 14, -30)
     local tabMine = Button(f, "My Services", 140, 24)
     tabMine:SetPoint("LEFT", tabFind, "RIGHT", 6, 0)
     tabFind:SetScript("OnClick", function() UI:SetTab("find") end)
     tabMine:SetScript("OnClick", function() UI:SetTab("mine") end)
+    for _, btn in ipairs({ tabFind, tabMine }) do
+        btn.bar = btn:CreateTexture(nil, "OVERLAY")
+        btn.bar:SetColorTexture(1, 0.82, 0, 1)
+        btn.bar:SetHeight(2)
+        btn.bar:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 4, 0)
+        btn.bar:SetPoint("TOPRIGHT", btn, "BOTTOMRIGHT", -4, 0)
+    end
     f.tabFind, f.tabMine = tabFind, tabMine
 
     f.find = CreateFrame("Frame", nil, f)
     f.find:SetPoint("TOPLEFT", 12, -62)
-    f.find:SetPoint("BOTTOMRIGHT", -12, 10)
+    f.find:SetPoint("BOTTOMRIGHT", -12, 30)
 
     f.mine = CreateFrame("Frame", nil, f)
     f.mine:SetPoint("TOPLEFT", 12, -62)
-    f.mine:SetPoint("BOTTOMRIGHT", -12, 10)
+    f.mine:SetPoint("BOTTOMRIGHT", -12, 30)
+
+    local footerHolder = CreateFrame("Frame", nil, f)
+    footerHolder:SetAllPoints(f)
+    footerHolder:SetFrameLevel(f:GetFrameLevel() + 10)
+    f.footer = Label(footerHolder, "GameFontDisableSmall", "Any bugs message |cffffffffyuriko333_|r on discord")
+    f.footer:SetPoint("BOTTOM", f, "BOTTOM", 0, 12)
 
     self.frame = f
     self:BuildFind(f.find)
@@ -124,8 +137,12 @@ function UI:SetTab(tab)
     self.tab = tab
     f.find:SetShown(tab == "find")
     f.mine:SetShown(tab == "mine")
-    f.tabFind:SetEnabled(tab ~= "find")
-    f.tabMine:SetEnabled(tab ~= "mine")
+    for name, btn in pairs({ find = f.tabFind, mine = f.tabMine }) do
+        local active = (name == tab)
+        btn:SetAlpha(active and 1 or 0.55)
+        btn.bar:SetShown(active)
+        if active then btn:LockHighlight() else btn:UnlockHighlight() end
+    end
     if tab == "find" then ns:Query() end
     self:Refresh()
 end
@@ -161,8 +178,54 @@ function UI:BuildFind(p)
     end)
     p.hideBusy:SetPoint("RIGHT", refresh, "LEFT", -70, 0)
 
+    -- Second row: service filter + sort order (both remembered between sessions).
+    local function Picker(width, getText, build)
+        local b = Button(p, "", width, 22)
+        b.update = function() b:SetText(getText()) end
+        b:SetScript("OnClick", function(self)
+            if not (MenuUtil and MenuUtil.CreateContextMenu) then return end
+            MenuUtil.CreateContextMenu(self, function(_, root) build(root) end)
+        end)
+        return b
+    end
+
+    p.filter = Picker(200, function()
+        local svc = ns.db.filterKey and ns.SERVICE_BY_KEY[ns.db.filterKey]
+        return "Show: " .. (svc and svc.short or "All services")
+    end, function(root)
+        root:CreateTitle("Show providers offering")
+        root:CreateRadio("All services", function() return ns.db.filterKey == nil end, function()
+            ns.db.filterKey = nil
+            UI:Refresh()
+        end)
+        for _, svc in ipairs(ns.SERVICES) do
+            root:CreateRadio(svc.label, function() return ns.db.filterKey == svc.key end, function()
+                ns.db.filterKey = svc.key
+                UI:Refresh()
+            end)
+        end
+    end)
+    p.filter:SetPoint("TOPLEFT", 0, -28)
+
+    p.sort = Picker(230, function()
+        local mode = ns.db.sortBy or "near"
+        for _, o in ipairs(ns.SORTS) do
+            if o.key == mode then return "Sort: " .. o.label end
+        end
+        return "Sort"
+    end, function(root)
+        root:CreateTitle("Sort by")
+        for _, o in ipairs(ns.SORTS) do
+            root:CreateRadio(o.label, function() return (ns.db.sortBy or "near") == o.key end, function()
+                ns.db.sortBy = o.key
+                UI:Refresh()
+            end)
+        end
+    end)
+    p.sort:SetPoint("LEFT", p.filter, "RIGHT", 6, 0)
+
     local scroll = CreateFrame("ScrollFrame", nil, p, "UIPanelScrollFrameTemplate")
-    scroll:SetPoint("TOPLEFT", 0, -30)
+    scroll:SetPoint("TOPLEFT", 0, -58)
     scroll:SetPoint("BOTTOMRIGHT", -26, 0)
     local content = CreateFrame("Frame", nil, scroll)
     content:SetSize(W - 60, 1)
@@ -170,7 +233,7 @@ function UI:BuildFind(p)
     p.scroll, p.content, p.rows = scroll, content, {}
 
     p.empty = Label(p, "GameFontDisable",
-        "No mages listed right now.\n\nMages appear here when they open for business\nwith MageBoard. Hit Refresh to ask again.")
+        "Nobody is listed right now.\n\nMages and warlocks appear here when they open\nfor business with Mage Dash. Hit Refresh to ask again.")
     p.empty:SetPoint("CENTER", 0, 20)
     p.empty:SetJustifyH("CENTER")
 end
@@ -183,9 +246,22 @@ local function ShowRequestMenu(btn, prov)
     MenuUtil.CreateContextMenu(btn, function(_, root)
         root:CreateTitle("Request from " .. ns.Short(prov.name))
         local o = ns.outgoing[prov.name]
+        local myLevel = UnitLevel("player") or 1
         for _, s in ipairs(ns.SERVICES) do
             local price = prov.services[s.key]
-            if price then
+            local top = prov.ranks and prov.ranks[s.key]
+            if price and s.ranks and top then
+                -- Ranked service: pick the rank you can actually use.
+                local best = ns.BestRankForLevel(s, top, myLevel)
+                local sub = root:CreateButton(("%s (up to Rank %d)  -  %s"):format(s.label, top, ns.FormatPrice(price)))
+                for r = top, 1, -1 do
+                    local text = ("%s  |cff888888(level %d+)|r"):format(ns.RankText(s, r), s.ranks[r][3])
+                    if r == best then text = text .. "  |cff40ff40best for you|r" end
+                    sub:CreateButton(text, function()
+                        ns:RequestService(prov.name, s.key, nil, r)
+                    end)
+                end
+            elseif price then
                 root:CreateButton(s.label .. "  -  " .. ns.FormatPrice(price), function()
                     ns:RequestService(prov.name, s.key)
                 end)
@@ -248,7 +324,13 @@ function UI:RefreshFind()
     local p = self.frame.find
     local list = ns:SortedProviders()
     p.hideBusy:SetChecked(ns.db.hideBusy)
-    p.count:SetText(("%d mage%s online"):format(#list, #list == 1 and "" or "s"))
+    p.count:SetText(("%d provider%s online"):format(#list, #list == 1 and "" or "s"))
+    p.filter.update()
+    p.sort.update()
+    local total = 0
+    for _, prov in pairs(ns.providers) do if prov.status then total = total + 1 end end
+    p.empty:SetText(total > 0 and "Nobody matches this filter.\n\nTry \"Show: All services\" or untick Hide busy."
+        or "Nobody is listed right now.\n\nMages and warlocks appear here when they open\nfor business with Mage Dash. Hit Refresh to ask again.")
     p.empty:SetShown(#list == 0)
 
     local myZone = GetZoneText()
@@ -278,7 +360,10 @@ function UI:RefreshFind()
         local parts = {}
         for _, s in ipairs(ns.SERVICES) do
             local price = prov.services and prov.services[s.key]
-            if price then parts[#parts + 1] = s.short .. " " .. ns.FormatPrice(price) end
+            local rank = prov.ranks and prov.ranks[s.key]
+            if price then
+                parts[#parts + 1] = s.short .. (rank and (" |cff69ccf0R" .. rank .. "|r") or "") .. " " .. ns.FormatPrice(price)
+            end
         end
         row.svc:SetText(#parts > 0 and table.concat(parts, "   ") or "|cff888888No services listed|r")
         row.note:SetText(prov.note or "")
@@ -416,15 +501,29 @@ function UI:RefreshMine()
     p.busy:SetEnabled(c.open)
     p.invite:SetChecked(ns.db.inviteOnAccept)
 
-    local _, class = UnitClass("player")
-    p.warn:SetText(class ~= "MAGE" and "You're not a mage. You can still list services if you have them." or "")
+    local any = false
+    for _, svc in ipairs(ns.SERVICES) do
+        if ns.KnowsService(svc) then any = true break end
+    end
+    p.warn:SetText(any and "" or "You don't know any of these spells yet. They unlock here as you learn them.")
 
     for _, row in ipairs(p.svcRows) do
         local e = c.services[row.svc.key]
-        row.cb:SetChecked(e.on)
+        local can = ns.CanOffer(row.svc)
+        row.cb:SetChecked(e.on and can)
+        row.cb:SetEnabled(can)
+        row.cb.label:SetTextColor(can and 1 or 0.5, can and 1 or 0.5, can and 1 or 0.5)
+        row.box:SetEnabled(can)
+        row.box:SetAlpha(can and 1 or 0.4)
+        if not can then row.box:ClearFocus() end
         if not row.box:HasFocus() then row.box:SetText(PriceText(e.price)) end
-        row.preview:SetText(ns.FormatPrice(e.price))
-        row.known:SetText(ns.KnowsService(row.svc) and "" or "(not learned)")
+        row.preview:SetText(can and ns.FormatPrice(e.price) or "")
+        local top = ns.HighestRank(row.svc)
+        if top > 0 then
+            row.known:SetText("|cff69ccf0" .. ns.RankText(row.svc, top) .. "|r")
+        else
+            row.known:SetText(ns.KnowsService(row.svc) and "" or (can and "(not learned, unlocked)" or "(not learned)"))
+        end
     end
     if not p.note:HasFocus() then p.note:SetText(c.note or "") end
 
@@ -442,8 +541,9 @@ function UI:RefreshMine()
             local s = ns.SERVICE_BY_KEY[req.key]
             local price = c.services[req.key] and c.services[req.key].price
             local tag = req.state == "accepted" and "|cff40ff40[accepted]|r " or ""
+            local what = s.short .. (req.rank and (" R" .. req.rank) or "")
             r.text:SetText(("%s|cffffd100%s|r - %s (%s) |cff888888%s|r")
-                :format(tag, ns.Short(req.sender), s.short, ns.PlainPrice(price), Ago(req.time)))
+                :format(tag, ns.Short(req.sender), what, ns.PlainPrice(price), Ago(req.time)))
             r.accept:SetShown(req.state ~= "accepted")
             r.decline:SetText(req.state == "accepted" and "Done" or "Decline")
             r:Show()

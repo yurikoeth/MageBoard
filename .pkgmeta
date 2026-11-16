@@ -1,6 +1,7 @@
-package-as: MageBoard
+package-as: MageDash
 
 ignore:
   - README.md
-  - logo.png
   - .pkgmeta
+  - logo.png
+  - screenshots
